@@ -6,6 +6,7 @@ from starkware.cairo.common.math import ( unsigned_div_rem)
 from starkware.cairo.common.bitwise import bitwise_and
 
 #exploring packing felts with mutiple smaller values to minimize the number of storage slots used by a contract 
+#TODO: add checks to ensure inputs are within suitable ranges to allow packing 
 
 const SHIFT_UP = 2**125
 const MASK_LOW = 2**125 - 1 

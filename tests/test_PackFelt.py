@@ -21,8 +21,8 @@ async def test_increase_balance():
         source=CONTRACT_FILE,
     )
 
-    num1 = 11231
-    num2 = 32343 
+    num1 = 112313690470927607670360376
+    num2 = 323433436356463455353355646
 
     #pack 2 numbers in single storage slot
     await contract.pack_2(num1,num2).invoke() 
