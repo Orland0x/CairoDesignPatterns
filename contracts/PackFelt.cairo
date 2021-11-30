@@ -2,12 +2,12 @@
 %builtins pedersen range_check bitwise
 
 from starkware.cairo.common.cairo_builtins import (HashBuiltin, BitwiseBuiltin)
-from starkware.cairo.common.math import ( unsigned_div_rem)
+from starkware.cairo.common.math import ( unsigned_div_rem, assert_nn_le)
 from starkware.cairo.common.bitwise import bitwise_and
 
 #exploring packing felts with mutiple smaller values to minimize the number of storage slots used by a contract 
-#TODO: add checks to ensure inputs are within suitable ranges to allow packing 
 
+const MAX_2 = 2**64 #the largest number that can be packed (can be set larger than this)
 const SHIFT_UP = 2**125
 const MASK_LOW = 2**125 - 1 
 const MASK_HIGH = 2**250 - 2**125 
@@ -32,6 +32,9 @@ func pack_2 {syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr} 
         num1 : felt, 
         num2 : felt 
     ):
+    assert_nn_le(num1, MAX_2)
+    assert_nn_le(num2, MAX_2)
+
     tempvar s = num1*SHIFT_UP
     packedData.write(s + num2)
     return ()
