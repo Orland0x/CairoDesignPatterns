@@ -1,41 +1,39 @@
-"""contract.cairo test file."""
 import os
 import pytest
 from starkware.starknet.testing.starknet import Starknet
 
-# The path to the contract source code.
 CONTRACT_FILE = os.path.join("contracts", "PackFelt.cairo")
 
-
-# The testing library uses python's asyncio. So the following
-# decorator and the ``async`` keyword are needed.
 @pytest.mark.asyncio
 async def test_increase_balance():
-    """Test increase_balance method."""
-    # Create a new Starknet class that simulates the StarkNet
-    # system.
+
     starknet = await Starknet.empty()
 
-    # Deploy the contract.
     contract = await starknet.deploy(
         source=CONTRACT_FILE,
     )
 
-    num1 = 2523434534534345
-    num2 = 3234334363564634
-
-    #pack 2 numbers in single storage slot
-    await contract.pack_2(num1,num2).invoke() 
-
-    #view storage slot
-    out = await contract.get_packedData().call()
-    print(out.result[0])
-
-    #unpack storage slot to retrieve numbers
+    #Test packing 2 numbers into single felt storage
+    num0 = 2523434534534345
+    num1 = 3234334363564634
+    await contract.pack_2(num0,num1).invoke() 
     out = await contract.unpack_2().call()
-    assert out.result[0] == num1
-    assert out.result[1] == num2 
+    assert out.result[0] == num0
+    assert out.result[1] == num1 
 
+    #Test packing 5 numbers into single felt storage
+    num0 = 12314
+    num1 = 46433
+    num2 = 89665
+    num3 = 34464
+    num4 = 37454
+    await contract.pack_5(num0, num1, num2, num3, num4).invoke()
+    out = await contract.unpack_5().call()
+    assert out.result[0] == num0
+    assert out.result[1] == num1
+    assert out.result[2] == num2
+    assert out.result[3] == num3 
+    assert out.result[4] == num4   
 
     #division test
     # a = 2**128

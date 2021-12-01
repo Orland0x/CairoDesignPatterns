@@ -7,12 +7,34 @@ from starkware.cairo.common.bitwise import bitwise_and
 
 #exploring packing felts with mutiple smaller values to minimize the number of storage slots used by a contract 
 
-const MAX_2 = 2**64 #the largest number that can be packed (can be set larger than this)
-const SHIFT_UP = 2**125
-const MASK_LOW = 2**125 - 1 
-const MASK_HIGH = 2**250 - 2**125 
-const DIV1 = 2**100
-const DIV2 = 2**25
+const DIV_100 = 2**100
+const DIV_50 = 2**50
+const DIV_25 = 2**25
+
+
+#Constants for 2 packing
+const MAX_2 = 2**125 #the largest number that can be packed (can be set larger than this)
+
+const SHIFT_2_1 = 2**125
+
+const MASK_2_0 = 2**125 - 1 
+const MASK_2_1 = 2**250 - 2**125 
+
+
+#Constants for 5 packing 
+const MAX_5 = 2**50 
+
+const SHIFT_5_1 = 2**50 
+const SHIFT_5_2 = 2**100 
+const SHIFT_5_3 = 2**150 
+const SHIFT_5_4 = 2**200 
+
+const MASK_5_0 = 2**50 - 1 
+const MASK_5_1 = 2**100 - 2**50 
+const MASK_5_2 = 2**150 - 2**100 
+const MASK_5_3 = 2**200 - 2**150
+const MASK_5_4 = 2**250 - 2**200 
+
 
 @storage_var
 func packedData() -> (num : felt):
@@ -26,32 +48,94 @@ func get_packedData{
     return (num)
 end
 
-#takes 2 felts of max size 2^125 and packs them into a single 251 bit storage felt 
 @external 
 func pack_2 {syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr} (
-        num1 : felt, 
-        num2 : felt 
+        num0 : felt, 
+        num1 : felt 
     ):
+    #Checking that the numbers are within the valid range
+    assert_nn_le(num0, MAX_2)
     assert_nn_le(num1, MAX_2)
-    assert_nn_le(num2, MAX_2)
 
-    tempvar s = num1*SHIFT_UP
-    packedData.write(s + num2)
+    #Shifting via multiplication
+    tempvar t1 = num1*SHIFT_2_1
+
+    packedData.write(t1 + num0)
     return ()
 end
 
 @external 
 func unpack_2 {syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, bitwise_ptr : BitwiseBuiltin*, range_check_ptr} (
     ) -> (
-        num1 : felt,
-        num2: felt
+        num0 : felt,
+        num1 : felt
     ):
     let (num) = packedData.read()
-    let (temp) = bitwise_and(num, MASK_HIGH)
-    let (temp2, _) = unsigned_div_rem(temp, DIV1)
-    let (num1, _) = unsigned_div_rem(temp2, DIV2)
-    let (num2) = bitwise_and(num, MASK_LOW) 
-    return (num1, num2)
+
+    #Masking out each number 
+    let (num0) = bitwise_and(num, MASK_2_0)
+    let (t1) = bitwise_and(num, MASK_2_1)
+
+    #Shifting via division
+    let (t1, _) = unsigned_div_rem(t1, DIV_100)
+    let (num1, _) = unsigned_div_rem(t1, DIV_25)
+     
+    return (num0, num1)
+end 
+
+
+@external 
+func pack_5 {syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr} (
+        num0 : felt, 
+        num1 : felt,
+        num2 : felt,
+        num3 : felt,
+        num4 : felt 
+    ):
+    #Checking that the numbers are within the valid range 
+    assert_nn_le(num0, MAX_5)
+    assert_nn_le(num1, MAX_5)
+    assert_nn_le(num2, MAX_5)
+    assert_nn_le(num3, MAX_5)
+    assert_nn_le(num4, MAX_5)
+
+    #Shifting via multiplication
+    tempvar t1 = num1*SHIFT_5_1
+    tempvar t2 = num2*SHIFT_5_2
+    tempvar t3 = num3*SHIFT_5_3
+    tempvar t4 = num4*SHIFT_5_4 
+    
+    packedData.write(t4 + t3 + t2 + t1 + num0)
+    return ()
+end
+
+@external 
+func unpack_5 {syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, bitwise_ptr : BitwiseBuiltin*, range_check_ptr} (
+    ) -> (
+        num0 : felt,
+        num1 : felt,
+        num2 : felt,
+        num3 : felt, 
+        num4 : felt 
+    ):
+    let (num) = packedData.read()
+
+    #Masking out each number 
+    let (num0) = bitwise_and(num, MASK_5_0)
+    let (t1) = bitwise_and(num, MASK_5_1)
+    let (t2) = bitwise_and(num, MASK_5_2)
+    let (t3) = bitwise_and(num, MASK_5_3)
+    let (t4) = bitwise_and(num, MASK_5_4)
+
+    #Shifting via division 
+    let (num1, _) = unsigned_div_rem(t1, DIV_50)
+    let (num2, _) = unsigned_div_rem(t2, DIV_100)
+    let (t3, _) = unsigned_div_rem(t3, DIV_100)
+    let (num3, _) = unsigned_div_rem(t3, DIV_50)
+    let (t4, _) = unsigned_div_rem(t4, DIV_100)
+    let (num4, _) = unsigned_div_rem(t4, DIV_100)
+
+    return (num0, num1, num2, num3, num4)
 end 
 
 #to test how divide works, there is a limit of about 2**122 for the denominator so the division by 2**125 (to perform the bitshift) must be done in 2 chunks.  
